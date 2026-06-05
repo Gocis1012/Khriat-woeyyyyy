@@ -14,30 +14,26 @@ type Config struct {
 	FrontendOrigin string
 	JWTSecret      string
 	GoogleClientID string
-	GoogleAPIKey   string
-	OpenAIAPIKey   string
-	OpenAIModel    string
+	DeepSeekAPIKey string
 	AutoMigrate    bool
+	AppEnv         string
 }
 
 func Load() (Config, error) {
-	// Try common .env locations so running from different working dirs works
 	_ = loadDotEnv(".env")
 	_ = loadDotEnv("../.env")
 	_ = loadDotEnv("../../.env")
 
 	cfg := Config{
-		Port: getEnv("PORT", "8080"),
-		// ⭐️ เปลี่ยนจาก os.Getenv("DATABASE_URL") เป็นบรรทัดล่างนี้:
+		Port:           getEnv("PORT", "8080"),
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
 		RedisURL:       getEnv("REDIS_URL", "localhost:6379"),
 		FrontendOrigin: getEnv("FRONTEND_ORIGIN", "http://localhost:3000"),
 		JWTSecret:      os.Getenv("JWT_SECRET"),
 		GoogleClientID: os.Getenv("GOOGLE_CLIENT_ID"),
-		GoogleAPIKey:   os.Getenv("GOOGLE_API_KEY"),
-		OpenAIAPIKey:   os.Getenv("OPENAI_API_KEY"),
-		OpenAIModel:    getEnv("OPENAI_MODEL", "gpt-4o-mini"),
+		DeepSeekAPIKey: os.Getenv("DEEPSEEK_API_KEY"),
 		AutoMigrate:    getEnv("AUTO_MIGRATE", "true") == "true",
+		AppEnv:         getEnv("APP_ENV", "development"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -46,8 +42,8 @@ func Load() (Config, error) {
 	if cfg.JWTSecret == "" {
 		return cfg, errors.New("JWT_SECRET is required")
 	}
-	if cfg.GoogleClientID == "" {
-		return cfg, errors.New("GOOGLE_CLIENT_ID is required")
+	if cfg.DeepSeekAPIKey == "" {
+		return cfg, errors.New("DEEPSEEK_API_KEY is required")
 	}
 
 	return cfg, nil

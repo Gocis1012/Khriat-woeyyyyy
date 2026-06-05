@@ -67,7 +67,7 @@ func main() {
     guestRepo    := repository.NewGuestRepository(redisClient)
     guestSvc     := service.NewGuestService(guestRepo)
 
-    translationSvc, err := service.NewTranslationService(env.GoogleAPIKey)
+    translationSvc, err := service.NewTranslationService(env.DeepSeekAPIKey)
     if err != nil {
         slog.Error("Failed to initialize translation service", "error", err)
         os.Exit(1)
@@ -80,11 +80,11 @@ func main() {
 
     // Middleware — ลำดับสำคัญ
     app.Use(cors.New(cors.Config{
-        AllowOrigins: "http://localhost:3000",
+        AllowOrigins: env.FrontendOrigin,
         AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
         AllowHeaders: "Content-Type,Authorization",
     }))
-    app.Use(middleware.GuestSession())
+    app.Use(middleware.GuestSession(env.AppEnv))
     app.Use("/translate", limiter.New(limiter.Config{
         Max:        10,
         Expiration: 1 * time.Minute,
