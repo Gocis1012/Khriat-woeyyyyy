@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Fun messages that change based on translation level
+// Per level + target fun messages
 const LEVEL_MESSAGES: Record<number, string> = {
   1: "สุภาพจนพระสงฆ์ยังอนุโมทนา 🙏✨",
   2: "ข้อความนี้ส่งให้ CEO ได้เลย 💼",
@@ -12,26 +12,45 @@ const LEVEL_MESSAGES: Record<number, string> = {
   5: "ดูดี... แต่แฝงดาบทุกตัวอักษร 💀🔪",
 };
 
-const DEFAULT_MSG = "ข้อความพร้อมส่งแล้ว ✅";
+const TARGET_LABELS: Record<string, { emoji: string; label: string }> = {
+  boss:    { emoji: "👔", label: "เจ้านาย"  },
+  client:  { emoji: "💼", label: "ลูกค้า"   },
+  teacher: { emoji: "📚", label: "อาจารย์"  },
+  friend:  { emoji: "🫂", label: "เพื่อน"   },
+};
+
+const GLOW_COLORS: Record<number, string> = {
+  1: "rgba(34,197,94,0.15)",
+  2: "rgba(59,130,246,0.15)",
+  3: "rgba(234,179,8,0.12)",
+  4: "rgba(249,115,22,0.15)",
+  5: "rgba(239,68,68,0.15)",
+};
+
+const BORDER_CLASSES: Record<number, string> = {
+  1: "border-green-800",
+  2: "border-blue-800",
+  3: "border-yellow-800",
+  4: "border-orange-800",
+  5: "border-red-800",
+};
 
 export default function Second() {
-  const [result, setResult] = useState<string | null>(null);
-  const [level, setLevel] = useState<number>(3);
+  const [result,  setResult]  = useState<string | null>(null);
+  const [level,   setLevel]   = useState<number>(3);
+  const [target,  setTarget]  = useState<string>("boss");
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copied,  setCopied]  = useState(false);
   const [sparkle, setSparkle] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("translationResult");
-    const storedLevel = sessionStorage.getItem("translationLevel");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setResult(parsed.result ?? null);
-    }
-    if (storedLevel) {
-      setLevel(parseInt(storedLevel, 10));
-    }
+    const stored       = sessionStorage.getItem("translationResult");
+    const storedLevel  = sessionStorage.getItem("translationLevel");
+    const storedTarget = sessionStorage.getItem("translationTarget");
+    if (stored)       { const p = JSON.parse(stored); setResult(p.result ?? null); }
+    if (storedLevel)  setLevel(parseInt(storedLevel, 10));
+    if (storedTarget) setTarget(storedTarget);
     setLoading(false);
   }, []);
 
@@ -46,45 +65,34 @@ export default function Second() {
     } catch {}
   };
 
-  // Glow color based on level
-  const glowColors: Record<number, string> = {
-    1: "rgba(34,197,94,0.15)",
-    2: "rgba(59,130,246,0.15)",
-    3: "rgba(234,179,8,0.12)",
-    4: "rgba(249,115,22,0.15)",
-    5: "rgba(239,68,68,0.15)",
-  };
-
-  const borderColors: Record<number, string> = {
-    1: "border-green-800",
-    2: "border-blue-800",
-    3: "border-yellow-800",
-    4: "border-orange-800",
-    5: "border-red-800",
-  };
+  const targetInfo = TARGET_LABELS[target] ?? { emoji: "💬", label: target };
 
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center w-full px-4 py-12 overflow-hidden bg-[#111111]">
-      {/* Background glow — matches level */}
+      {/* Background glow */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${glowColors[level] ?? glowColors[3]} 0%, transparent 70%)`,
-        }}
+        style={{ background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${GLOW_COLORS[level] ?? GLOW_COLORS[3]} 0%, transparent 70%)` }}
       />
 
       {loading ? (
         <p className="text-zinc-400 text-lg">กำลังโหลด...</p>
       ) : result ? (
         <div className="relative w-full max-w-2xl fade-up">
-          {/* Fun level message */}
-          <p className="text-sm text-zinc-400 mb-3 text-center">
-            {LEVEL_MESSAGES[level] ?? DEFAULT_MSG}
-          </p>
+          {/* Target + level badge */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="px-3 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm">
+              {targetInfo.emoji} ส่งให้{targetInfo.label}
+            </span>
+            <span className="text-zinc-500 text-sm">•</span>
+            <span className="text-sm text-zinc-400">
+              {LEVEL_MESSAGES[level] ?? "พร้อมส่งแล้ว ✅"}
+            </span>
+          </div>
 
           {/* Result card */}
           <div
-            className={`relative rounded-3xl border ${borderColors[level] ?? "border-zinc-700"} bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl`}
+            className={`relative rounded-3xl border ${BORDER_CLASSES[level] ?? "border-zinc-700"} bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl`}
           >
             <p className="text-xl md:text-2xl text-zinc-100 leading-relaxed whitespace-pre-wrap">
               {result}
@@ -99,10 +107,10 @@ export default function Second() {
                     className="absolute text-yellow-300 animate-ping"
                     style={{
                       left: `${10 + Math.random() * 80}%`,
-                      top: `${10 + Math.random() * 80}%`,
+                      top:  `${10 + Math.random() * 80}%`,
                       fontSize: `${10 + Math.random() * 14}px`,
                       animationDuration: `${0.5 + Math.random() * 0.5}s`,
-                      animationDelay: `${Math.random() * 0.3}s`,
+                      animationDelay:    `${Math.random() * 0.3}s`,
                     }}
                   >
                     ✨

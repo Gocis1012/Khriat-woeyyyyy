@@ -16,8 +16,9 @@ type GuestHandler struct {
 }
 
 type translateGuestRequest struct {
-	Text  string `json:"text"`
-	Level int    `json:"level"` // 1-5, default 3
+	Text   string `json:"text"`
+	Level  int    `json:"level"`  // 1-5, default 3
+	Target string `json:"target"` // boss | client | teacher | friend
 }
 
 func NewGuestHandler(
@@ -99,10 +100,9 @@ func (h *GuestHandler) Translate(c *fiber.Ctx) error {
 			})
 		}
 
-		result, err := h.translateService.PurifyText(c.Context(), req.Text, req.Level)
+		result, err := h.translateService.PurifyText(c.Context(), req.Text, req.Target, req.Level)
 		if err != nil {
 			slog.Error("Translation failed for user", "error", err, "user_id", userID)
-			// TODO: refund credit on failure
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "translation failed",
 			})
@@ -111,6 +111,7 @@ func (h *GuestHandler) Translate(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"result": result,
 			"level":  req.Level,
+			"target": req.Target,
 		})
 	}
 
@@ -125,7 +126,7 @@ func (h *GuestHandler) Translate(c *fiber.Ctx) error {
 	var result string
 	err := h.guestService.UseCredit(c.Context(), guestID, func() error {
 		var err error
-		result, err = h.translateService.PurifyText(c.Context(), req.Text, req.Level)
+		result, err = h.translateService.PurifyText(c.Context(), req.Text, req.Target, req.Level)
 		return err
 	})
 
@@ -151,5 +152,6 @@ func (h *GuestHandler) Translate(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"result": result,
 		"level":  req.Level,
+		"target": req.Target,
 	})
 }
