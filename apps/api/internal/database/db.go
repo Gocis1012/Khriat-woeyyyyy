@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,12 +34,25 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func NewRedisClient(addr string) (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr: addr, // "localhost:6379"
-	})
+// NewRedisClient accepts either:
+//   - "host:port"                          (local / docker-compose)
+//   - "redis://[:password@]host:port"      (Railway, standard URL)
+//   - "rediss://[:password@]host:port"     (Railway with TLS)
+func NewRedisClient(rawURL string) (*redis.Client, error) {
+	var opts *redis.Options
+	var err error
 
-	// Ping ทดสอบว่า connect ได้จริง
+	if strings.HasPrefix(rawURL, "redis://") || strings.HasPrefix(rawURL, "rediss://") {
+		opts, err = redis.ParseURL(rawURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid redis URL %q: %w", rawURL, err)
+		}
+	} else {
+		// bare host:port
+		opts = &redis.Options{Addr: rawURL}
+	}
+
+	client := redis.NewClient(opts)
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, fmt.Errorf("redis connect failed: %w", err)
 	}
