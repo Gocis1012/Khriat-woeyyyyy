@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: khriat-woeyyyyy-api
+    runtime: docker
+    dockerfilePath: apps/api/Dockerfile
+    dockerContext: apps/api
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: APP_ENV
+        value: production
+      - key: AUTO_MIGRATE
+        value: "true"
+      # ── Set these in the Render dashboard ──────────────────
+      # DATABASE_URL   → Supabase connection string
+      # REDIS_URL      → Upstash Redis URL (rediss://...)
+      # JWT_SECRET     → any long random string
+      # GOOGLE_CLIENT_ID  → Google OAuth client ID
+      # DEEPSEEK_API_KEY  → DeepSeek API key
+      # FRONTEND_ORIGIN   → your Vercel URL (set after Vercel deploy)
