@@ -1,0 +1,98 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-myapp_db}
+      TZ: Asia/Bangkok
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-myapp_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── เพิ่ม Redis ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: khriat-admin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      TZ: Asia/Bangkok
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      # ลบ target: builder ออก → ใช้ final stage (runtime)
+    container_name: go_app
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-myapp_db}?sslmode=disable
+      REDIS_URL: redis:6379               # ← เพิ่ม ชี้ไป redis service
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your-google-oauth-client-id}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}   # ← แก้ชื่อให้ตรง
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      APP_ENV: ${APP_ENV:-development}    # ← เพิ่ม สำหรับ Secure cookie
+      TZ: Asia/Bangkok
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    # ลบ volumes mount source code ออก → production ไม่ควร mount
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:                              # ← เพิ่ม รอ redis ด้วย
+        condition: service_healthy
+    # ลบ command: go run ออก → ใช้ CMD ใน Dockerfile แทน
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge

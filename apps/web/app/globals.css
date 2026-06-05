@@ -1,0 +1,17 @@
+/* apps/web/app/globals.css */
+
+/* 1. Import ตัวระบบหลักของ Tailwind v4 */
+@import "tailwindcss";
+
+/* 2. คอนฟิกเพิ่มฟอนต์เข้าไปในระบบของ Tailwind v4 */
+@theme {
+  /* สิ่งนี้จะสร้างคลาส 'font-dog' ให้ใช้งานอัตโนมัติ */
+  --font-dog: var(--font-iannnnn-dog), sans-serif;
+}
+
+/* 3. สั่งให้ทั้งเว็บใช้ฟอนต์ตัวนี้เป็น Default (ถ้าต้องการ) */
+@layer base {
+  body {
+    @apply font-dog antialiased;
+  }
+}

@@ -1,0 +1,9 @@
+bin
+vendor
+.git
+.gitignore
+*.log
+*.tmp
+node_modules
+.env
+.DS_Store
