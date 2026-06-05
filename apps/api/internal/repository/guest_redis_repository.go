@@ -12,7 +12,7 @@ import (
 
 const (
 	guestKeyPrefix     = "guest:"
-	guestInitialCredit = 3.00
+	guestInitialCredit = 6.00
 	guestTTL           = 24 * time.Hour
 )
 
@@ -47,10 +47,10 @@ func (r *guestRedisRepository) GetOrCreate(ctx context.Context, guestID string) 
 	key := r.key(guestID)
 
 	val, err := r.client.Get(ctx, key).Result()
-
+    
 	if err == redis.Nil {
 		guest := &model.Guest{
-			Credit: 3.00,
+			Credit: guestInitialCredit,
 			CreatedAt: time.Now().UTC(),
 		}
 		if err := r.save(ctx,key, guest); err != nil {

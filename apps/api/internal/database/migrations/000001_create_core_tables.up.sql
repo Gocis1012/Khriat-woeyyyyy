@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(255) NOT NULL,
     avatar_url TEXT,
-    credit NUMERIC(10,2) NOT NULL DEFAULT 3.00,
+    credit NUMERIC(10,2) NOT NULL DEFAULT 10.00,
     member_type VARCHAR(50) NOT NULL DEFAULT 'free',
     last_daily_credit_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS trans_words (
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT trans_words_tone_mode_check CHECK (tone_mode IN ('professional', 'passive-aggressive', 'foreign')),
+    CONSTRAINT trans_words_tone_mode_check CHECK (tone_mode IN ('level_1', 'level_2', 'level_3', 'level_4', 'level_5')),
     CONSTRAINT trans_words_status_check CHECK (status IN ('pending', 'success', 'failed'))
 );
 

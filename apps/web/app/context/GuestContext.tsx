@@ -1,42 +1,77 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
+import { useAuth } from "./AuthContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 interface GuestState {
-  credit: number | null;   // null = not loaded yet
+  credit: number | null;
+  isLoggedIn: boolean;
   refreshCredit: () => Promise<void>;
 }
 
 const GuestContext = createContext<GuestState>({
   credit: null,
+  isLoggedIn: false,
   refreshCredit: async () => {},
 });
 
 export function GuestProvider({ children }: { children: ReactNode }) {
   const [credit, setCredit] = useState<number | null>(null);
+  const { user, token, isLoggedIn, loading: authLoading } = useAuth();
 
   const refreshCredit = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/guest/status`, {
-        credentials: "include", // send & receive the guest_id cookie
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setCredit(data.credit ?? null);
+      if (isLoggedIn && token) {
+        // Logged-in user — get credit from /api/v1/user/me
+        const res = await fetch(`${API_BASE}/api/v1/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCredit(data.credit ?? null);
+        }
+      } else {
+        // Guest — get credit from /guest/status
+        const res = await fetch(`${API_BASE}/guest/status`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCredit(data.credit ?? null);
+        }
+      }
     } catch {
-      // network error — silently ignore, credit stays null
+      // silently ignore network errors
     }
-  }, []);
+  }, [isLoggedIn, token]);
 
-  // Fetch on first mount (triggers cookie creation via middleware)
+  // Update credit when user data changes
   useEffect(() => {
-    refreshCredit();
-  }, [refreshCredit]);
+    if (user) {
+      setCredit(user.credit);
+    }
+  }, [user]);
+
+  // Fetch credit on first mount and when auth state resolves
+  useEffect(() => {
+    if (!authLoading) {
+      refreshCredit();
+    }
+  }, [authLoading, refreshCredit]);
 
   return (
-    <GuestContext.Provider value={{ credit, refreshCredit }}>
+    <GuestContext.Provider value={{ credit, isLoggedIn, refreshCredit }}>
       {children}
     </GuestContext.Provider>
   );

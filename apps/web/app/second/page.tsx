@@ -3,17 +3,34 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Fun messages that change based on translation level
+const LEVEL_MESSAGES: Record<number, string> = {
+  1: "สุภาพจนพระสงฆ์ยังอนุโมทนา 🙏✨",
+  2: "ข้อความนี้ส่งให้ CEO ได้เลย 💼",
+  3: "สุภาพพอดี ไม่มากไม่น้อย 😌",
+  4: "สุภาพ... แต่คนอ่านจะรู้สึกอะไรบางอย่าง 😈",
+  5: "ดูดี... แต่แฝงดาบทุกตัวอักษร 💀🔪",
+};
+
+const DEFAULT_MSG = "ข้อความพร้อมส่งแล้ว ✅";
+
 export default function Second() {
   const [result, setResult] = useState<string | null>(null);
+  const [level, setLevel] = useState<number>(3);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [sparkle, setSparkle] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const stored = sessionStorage.getItem("translationResult");
+    const storedLevel = sessionStorage.getItem("translationLevel");
     if (stored) {
       const parsed = JSON.parse(stored);
       setResult(parsed.result ?? null);
+    }
+    if (storedLevel) {
+      setLevel(parseInt(storedLevel, 10));
     }
     setLoading(false);
   }, []);
@@ -23,19 +40,36 @@ export default function Second() {
     try {
       await navigator.clipboard.writeText(result);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setSparkle(true);
+      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setSparkle(false), 1000);
     } catch {}
+  };
+
+  // Glow color based on level
+  const glowColors: Record<number, string> = {
+    1: "rgba(34,197,94,0.15)",
+    2: "rgba(59,130,246,0.15)",
+    3: "rgba(234,179,8,0.12)",
+    4: "rgba(249,115,22,0.15)",
+    5: "rgba(239,68,68,0.15)",
+  };
+
+  const borderColors: Record<number, string> = {
+    1: "border-green-800",
+    2: "border-blue-800",
+    3: "border-yellow-800",
+    4: "border-orange-800",
+    5: "border-red-800",
   };
 
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center w-full px-4 py-12 overflow-hidden bg-[#111111]">
-
-      {/* Soft green glow — calm after the storm */}
+      {/* Background glow — matches level */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 55%, rgba(22,163,74,0.15) 0%, transparent 70%)",
+          background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${glowColors[level] ?? glowColors[3]} 0%, transparent 70%)`,
         }}
       />
 
@@ -43,16 +77,39 @@ export default function Second() {
         <p className="text-zinc-400 text-lg">กำลังโหลด...</p>
       ) : result ? (
         <div className="relative w-full max-w-2xl fade-up">
-          {/* Label */}
-          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3 text-center">
-            ข้อความพร้อมส่งแล้ว ✅
+          {/* Fun level message */}
+          <p className="text-sm text-zinc-400 mb-3 text-center">
+            {LEVEL_MESSAGES[level] ?? DEFAULT_MSG}
           </p>
 
           {/* Result card */}
-          <div className="rounded-3xl border border-zinc-700 bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl">
+          <div
+            className={`relative rounded-3xl border ${borderColors[level] ?? "border-zinc-700"} bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl`}
+          >
             <p className="text-xl md:text-2xl text-zinc-100 leading-relaxed whitespace-pre-wrap">
               {result}
             </p>
+
+            {/* Sparkle overlay on copy */}
+            {sparkle && (
+              <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="absolute text-yellow-300 animate-ping"
+                    style={{
+                      left: `${10 + Math.random() * 80}%`,
+                      top: `${10 + Math.random() * 80}%`,
+                      fontSize: `${10 + Math.random() * 14}px`,
+                      animationDuration: `${0.5 + Math.random() * 0.5}s`,
+                      animationDelay: `${Math.random() * 0.3}s`,
+                    }}
+                  >
+                    ✨
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -68,11 +125,11 @@ export default function Second() {
               onClick={handleCopy}
               className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
                 copied
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-600 text-white scale-105"
                   : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
               }`}
             >
-              {copied ? "✓ คัดลอกแล้ว!" : "คัดลอก"}
+              {copied ? "✓ คัดลอกแล้ว! ✨" : "คัดลอก 📋"}
             </button>
           </div>
         </div>

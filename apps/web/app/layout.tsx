@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Navbar from "../components/navbar/์Narbar";
 import { iannnnnDog } from "../fonts";
+import { AuthProvider } from "./context/AuthContext";
 import { GuestProvider } from "./context/GuestContext";
 
 const geistSans = Geist({
@@ -17,25 +19,29 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "เครียดโว้ยยยย",
-  description: "Next.js + Tailwind v4",
+  description: "แปลงคำบ่นเป็นภาษาคนมีการศึกษา 😤",
 };
 
-// apps/web/app/layout.tsx
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={iannnnnDog.variable}>
-      {/* ปรับ body ให้เป็น flex คอลัมน์ เพื่อแยกสัดส่วนระหว่าง Navbar กับเนื้อหาให้ชัดเจน */}
+    <html lang="th" className={iannnnnDog.variable}>
+      <head>
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className="flex flex-col min-h-screen bg-[#111111] antialiased">
-        <GuestProvider>
-          <Navbar />
-          <main className="flex-1 flex flex-col">
-            {children}
-          </main>
-        </GuestProvider>
+        <AuthProvider>
+          <GuestProvider>
+            <Navbar />
+            <main className="flex-1 flex flex-col">{children}</main>
+          </GuestProvider>
+        </AuthProvider>
       </body>
     </html>
   );

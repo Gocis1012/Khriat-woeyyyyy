@@ -8,7 +8,10 @@ import (
 )
 
 type UserService interface {
-	Insert(ctx context.Context, users *model.User) error
+	Insert(ctx context.Context, user *model.User) error
+	FindByGoogleID(ctx context.Context, googleID string) (*model.User, error)
+	FindByID(ctx context.Context, id string) (*model.User, error)
+	DeductCredit(ctx context.Context, id string, amount float64) error
 }
 
 type userService struct {
@@ -19,14 +22,24 @@ func NewUserService(repo users.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-func (r *userService) Insert(ctx context.Context, user *model.User) error {
+func (s *userService) Insert(ctx context.Context, user *model.User) error {
 	if user == nil || user.Email == "" {
-		return fmt.Errorf("invalid Input")
+		return fmt.Errorf("invalid input")
 	}
-
-	if err := r.repo.Insert(ctx, user); err != nil {
-        return fmt.Errorf("user service insert: %w", err)     // ✅ wrap error
-    }
-
+	if err := s.repo.Insert(ctx, user); err != nil {
+		return fmt.Errorf("user service insert: %w", err)
+	}
 	return nil
+}
+
+func (s *userService) FindByGoogleID(ctx context.Context, googleID string) (*model.User, error) {
+	return s.repo.FindByGoogleID(ctx, googleID)
+}
+
+func (s *userService) FindByID(ctx context.Context, id string) (*model.User, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
+func (s *userService) DeductCredit(ctx context.Context, id string, amount float64) error {
+	return s.repo.DeductCredit(ctx, id, amount)
 }
