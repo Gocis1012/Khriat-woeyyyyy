@@ -44,6 +44,12 @@ export default function Navbar() {
   useEffect(() => {
     if (isLoggedIn || !googleBtnRef.current) return;
 
+    // Guard: never call Google with an empty client_id
+    if (!GOOGLE_CLIENT_ID) {
+      console.warn("[Navbar] NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set — Google login disabled");
+      return;
+    }
+
     const initGoogle = () => {
       if (!window.google) return;
       window.google.accounts.id.initialize({
