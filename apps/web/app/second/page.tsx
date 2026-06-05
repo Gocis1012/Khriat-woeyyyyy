@@ -21,7 +21,7 @@ export default function Second() {
   }, []);
 
   const handleCopy = async () => {
-    const textToCopy = result.translated || result.result || "ไม่มีข้อมูล";
+    const textToCopy = result.result || "ไม่มีข้อมูล";
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -69,7 +69,7 @@ export default function Second() {
                   </button>
                 </div>
                 <p className="text-lg text-black-800 dark:text-black-100">
-                  {result.translated || result.result || "ไม่มีข้อมูล"}
+                  {result.result || "ไม่มีข้อมูล"}
                 </p>
               </div>
 

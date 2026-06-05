@@ -1,7 +1,12 @@
+"use client";
+
 // apps/web/components/Navbar.tsx
 import Link from "next/link";
+import { useGuest } from "../../app/context/GuestContext";
 
 export default function Navbar() {
+  const { credit } = useGuest();
+
   return (
     <nav className="relative w-full h-16 flex items-center border-b px-4">
       {/* Logo */}
@@ -21,7 +26,20 @@ export default function Navbar() {
       </div>
 
       {/* Right Menu */}
-      <div className="ml-auto flex gap-4">
+      <div className="ml-auto flex items-center gap-4">
+        {/* Credit badge */}
+        <span className="text-sm text-slate-500">
+          {credit === null ? (
+            "..."
+          ) : credit <= 0 ? (
+            <span className="text-red-500 font-semibold">เครดิตหมด</span>
+          ) : (
+            <span>
+              เครดิต <span className="font-bold text-slate-800">{credit}</span>
+            </span>
+          )}
+        </span>
+
         <Link
           href="/login"
           className="px-4 py-2 border rounded hover:bg-gray-100"

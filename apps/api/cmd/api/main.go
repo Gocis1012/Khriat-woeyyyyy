@@ -80,9 +80,10 @@ func main() {
 
     // Middleware — ลำดับสำคัญ
     app.Use(cors.New(cors.Config{
-        AllowOrigins: env.FrontendOrigin,
-        AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-        AllowHeaders: "Content-Type,Authorization",
+        AllowOrigins:     env.FrontendOrigin,
+        AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+        AllowHeaders:     "Content-Type,Authorization",
+        AllowCredentials: true, // required for cookies with credentials:"include"
     }))
     app.Use(middleware.GuestSession(env.AppEnv))
     app.Use("/translate", limiter.New(limiter.Config{
