@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={iannnnnDog.variable}>
       {/* ปรับ body ให้เป็น flex คอลัมน์ เพื่อแยกสัดส่วนระหว่าง Navbar กับเนื้อหาให้ชัดเจน */}
-      <body className="flex flex-col min-h-screen bg-[#FAF8F5] antialiased">
+      <body className="flex flex-col min-h-screen bg-[#111111] antialiased">
         <GuestProvider>
           <Navbar />
           <main className="flex-1 flex flex-col">

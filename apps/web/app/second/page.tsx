@@ -1,92 +1,92 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Second() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const stored = sessionStorage.getItem("translationResult");
-    const input = sessionStorage.getItem("translationInput");
     if (stored) {
-      setResult(JSON.parse(stored));
-    }
-    if (input) {
-      setResult((prev: any) => ({ ...prev, originalInput: input }));
+      const parsed = JSON.parse(stored);
+      setResult(parsed.result ?? null);
     }
     setLoading(false);
   }, []);
 
   const handleCopy = async () => {
-    const textToCopy = result.result || "ไม่มีข้อมูล";
+    if (!result) return;
     try {
-      await navigator.clipboard.writeText(textToCopy);
+      await navigator.clipboard.writeText(result);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   };
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-10 px-16 sm:items-start text-black">
-        <div className="w-full">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black mb-8">
-            ผลลัพท์การแปล
-          </h1>
+    <div className="relative flex-1 flex flex-col items-center justify-center w-full px-4 py-12 overflow-hidden bg-[#111111]">
 
-          {loading ? (
-            <p className="text-lg text-slate-600">กำลังโหลด...</p>
-          ) : result ? (
-            <div className="w-full space-y-6">
-              <div className="p-6 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                <h2 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">
-                  ข้อความต้นฉบับ:
-                </h2>
-                <p className="text-lg text-slate-800 dark:text-slate-100">
-                  {result.originalInput || result.text || result.original || "ไม่มีข้อมูล"}
-                </p>
-              </div>
+      {/* Soft green glow — calm after the storm */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% 55%, rgba(22,163,74,0.15) 0%, transparent 70%)",
+        }}
+      />
 
-              <div className="p-6 bg-green-50 rounded-lg border border-black-200 text-black-800">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-slate-600 text-black-800">
-                    ผลลัพท์:
-                  </h2>
-                  <button
-                    onClick={handleCopy}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-all ${
-                      copied
-                        ? "bg-green-500 text-white"
-                        : "bg-slate-300 hover:bg-slate-400 text-slate-800"
-                    }`}
-                  >
-                    {copied ? "✓ Copied!" : "Copy"}
-                  </button>
-                </div>
-                <p className="text-lg text-black-800 dark:text-black-100">
-                  {result.result || "ไม่มีข้อมูล"}
-                </p>
-              </div>
+      {loading ? (
+        <p className="text-zinc-400 text-lg">กำลังโหลด...</p>
+      ) : result ? (
+        <div className="relative w-full max-w-2xl fade-up">
+          {/* Label */}
+          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3 text-center">
+            ข้อความพร้อมส่งแล้ว ✅
+          </p>
 
-      
-            </div>
-          ) : (
-            <p className="text-lg text-black-600">ไม่พบผลลัพท์</p>
-          )}
+          {/* Result card */}
+          <div className="rounded-3xl border border-zinc-700 bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl">
+            <p className="text-xl md:text-2xl text-zinc-100 leading-relaxed whitespace-pre-wrap">
+              {result}
+            </p>
+          </div>
 
-          <Link
-            href="/"
-            className="inline-block mt-8 px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-lg transition-colors"
-          >
-            ← กลับไปแปลใหม่
-          </Link>
+          {/* Actions */}
+          <div className="flex items-center justify-between mt-6">
+            <button
+              onClick={() => router.push("/")}
+              className="px-5 py-2 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors text-sm"
+            >
+              ← บ่นใหม่
+            </button>
+
+            <button
+              onClick={handleCopy}
+              className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
+                copied
+                  ? "bg-green-600 text-white"
+                  : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+              }`}
+            >
+              {copied ? "✓ คัดลอกแล้ว!" : "คัดลอก"}
+            </button>
+          </div>
         </div>
-      </main>
+      ) : (
+        <div className="relative text-center fade-up">
+          <p className="text-zinc-400 text-lg mb-4">ไม่พบผลลัพท์</p>
+          <button
+            onClick={() => router.push("/")}
+            className="px-6 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm transition-colors"
+          >
+            ← กลับไปบ่น
+          </button>
+        </div>
+      )}
     </div>
   );
 }
