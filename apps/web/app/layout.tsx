@@ -35,7 +35,7 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
       </head>
-      <body className="flex flex-col min-h-screen bg-[#111111] antialiased">
+      <body className="flex flex-col min-h-screen bg-white text-black antialiased">
         <AuthProvider>
           <GuestProvider>
             <Navbar />

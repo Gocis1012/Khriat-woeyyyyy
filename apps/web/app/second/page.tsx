@@ -2,55 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-// Per level + target fun messages
-const LEVEL_MESSAGES: Record<number, string> = {
-  1: "สุภาพจนพระสงฆ์ยังอนุโมทนา 🙏✨",
-  2: "ข้อความนี้ส่งให้ CEO ได้เลย 💼",
-  3: "สุภาพพอดี ไม่มากไม่น้อย 😌",
-  4: "สุภาพ... แต่คนอ่านจะรู้สึกอะไรบางอย่าง 😈",
-  5: "ดูดี... แต่แฝงดาบทุกตัวอักษร 💀🔪",
-};
-
-const TARGET_LABELS: Record<string, { emoji: string; label: string }> = {
-  boss:    { emoji: "👔", label: "เจ้านาย"  },
-  client:  { emoji: "💼", label: "ลูกค้า"   },
-  teacher: { emoji: "📚", label: "อาจารย์"  },
-  friend:  { emoji: "🫂", label: "เพื่อน"   },
-};
-
-const GLOW_COLORS: Record<number, string> = {
-  1: "rgba(34,197,94,0.15)",
-  2: "rgba(59,130,246,0.15)",
-  3: "rgba(234,179,8,0.12)",
-  4: "rgba(249,115,22,0.15)",
-  5: "rgba(239,68,68,0.15)",
-};
-
-const BORDER_CLASSES: Record<number, string> = {
-  1: "border-green-800",
-  2: "border-blue-800",
-  3: "border-yellow-800",
-  4: "border-orange-800",
-  5: "border-red-800",
-};
+import { targetLabel, levelLabel } from "../lib/translateOptions";
 
 export default function Second() {
-  const [result,  setResult]  = useState<string | null>(null);
-  const [level,   setLevel]   = useState<number>(3);
-  const [target,  setTarget]  = useState<string>("boss");
+  const [result, setResult] = useState<string | null>(null);
+  const [original, setOriginal] = useState<string>("");
+  const [level, setLevel] = useState<number>(3);
+  const [target, setTarget] = useState<string>("boss");
   const [loading, setLoading] = useState(true);
-  const [copied,  setCopied]  = useState(false);
-  const [sparkle, setSparkle] = useState(false);
+  const [copied, setCopied] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const stored       = sessionStorage.getItem("translationResult");
-    const storedLevel  = sessionStorage.getItem("translationLevel");
-    const storedTarget = sessionStorage.getItem("translationTarget");
-    if (stored)       { const p = JSON.parse(stored); setResult(p.result ?? null); }
-    if (storedLevel)  setLevel(parseInt(storedLevel, 10));
-    if (storedTarget) setTarget(storedTarget);
+    const stored = sessionStorage.getItem("translationResult");
+    const input = sessionStorage.getItem("translationInput");
+    const lvl = sessionStorage.getItem("translationLevel");
+    const tgt = sessionStorage.getItem("translationTarget");
+    if (stored) setResult(JSON.parse(stored).result ?? null);
+    if (input) setOriginal(input);
+    if (lvl) setLevel(parseInt(lvl, 10));
+    if (tgt) setTarget(tgt);
     setLoading(false);
   }, []);
 
@@ -59,99 +30,90 @@ export default function Second() {
     try {
       await navigator.clipboard.writeText(result);
       setCopied(true);
-      setSparkle(true);
-      setTimeout(() => setCopied(false), 2500);
-      setTimeout(() => setSparkle(false), 1000);
+      setTimeout(() => setCopied(false), 2000);
     } catch {}
   };
 
-  const targetInfo = TARGET_LABELS[target] ?? { emoji: "💬", label: target };
-
   return (
-    <div className="relative flex-1 flex flex-col items-center justify-center w-full px-4 py-12 overflow-hidden bg-[#111111]">
-      {/* Background glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${GLOW_COLORS[level] ?? GLOW_COLORS[3]} 0%, transparent 70%)` }}
-      />
+    <div className="flex-1 w-full bg-white flex flex-col items-center px-4 py-8">
+      <div className="w-full max-w-5xl flex flex-col gap-5">
+        {loading ? (
+          <p className="text-black/50 text-lg">กำลังโหลด...</p>
+        ) : result ? (
+          <div className="flex flex-col gap-5 fade-up">
+            {/* ส่งให้ใคร */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[#ff7b00] text-xl font-bold pl-2">
+                ส่งให้ใคร
+              </span>
+              <span className="text-black/80 text-xl pl-3">
+                {targetLabel(target)}
+              </span>
+            </div>
 
-      {loading ? (
-        <p className="text-zinc-400 text-lg">กำลังโหลด...</p>
-      ) : result ? (
-        <div className="relative w-full max-w-2xl fade-up">
-          {/* Target + level badge */}
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className="px-3 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm">
-              {targetInfo.emoji} ส่งให้{targetInfo.label}
-            </span>
-            <span className="text-zinc-500 text-sm">•</span>
-            <span className="text-sm text-zinc-400">
-              {LEVEL_MESSAGES[level] ?? "พร้อมส่งแล้ว ✅"}
-            </span>
-          </div>
+            {/* เลือกระดับภาษา */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[#ff7b00] text-xl font-bold pl-2">
+                เลือกระดับภาษา
+              </span>
+              <span className="text-black/80 text-xl pl-3">
+                {levelLabel(level)}
+              </span>
+            </div>
 
-          {/* Result card */}
-          <div
-            className={`relative rounded-3xl border ${BORDER_CLASSES[level] ?? "border-zinc-700"} bg-zinc-900/90 backdrop-blur-sm p-8 shadow-2xl`}
-          >
-            <p className="text-xl md:text-2xl text-zinc-100 leading-relaxed whitespace-pre-wrap">
-              {result}
-            </p>
+            {/* ของเจ้า (original) */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[#ff7b00] text-xl font-bold pl-2">
+                ของเจ้า
+              </span>
+              <p className="text-black/80 text-lg pl-3 whitespace-pre-wrap break-words">
+                {original || "—"}
+              </p>
+            </div>
 
-            {/* Sparkle overlay on copy */}
-            {sparkle && (
-              <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className="absolute text-yellow-300 animate-ping"
-                    style={{
-                      left: `${10 + Math.random() * 80}%`,
-                      top:  `${10 + Math.random() * 80}%`,
-                      fontSize: `${10 + Math.random() * 14}px`,
-                      animationDuration: `${0.5 + Math.random() * 0.5}s`,
-                      animationDelay:    `${Math.random() * 0.3}s`,
-                    }}
-                  >
-                    ✨
-                  </span>
-                ))}
+            {/* ของข่อย (result box) */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[#ff7b00] text-xl font-bold pl-2">
+                ของข่อย
+              </span>
+              <div className="relative w-full rounded-[18px] border border-black/80 bg-white p-6 pb-20 shadow-sm">
+                <p className="text-xl md:text-2xl leading-[1.7] text-black whitespace-pre-wrap break-words">
+                  {result}
+                </p>
+
+                {/* Copy button */}
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className={`absolute bottom-4 right-4 flex h-[60px] items-center justify-center rounded-[22px] px-5 text-lg font-bold text-white shadow-md transition-all active:scale-95 ${
+                    copied ? "bg-[#01a021]" : "bg-[#ff8055] hover:bg-[#ff6a3c]"
+                  }`}
+                >
+                  {copied ? "คัดลอกแล้ว ✓" : "คัดลอก"}
+                </button>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between mt-6">
+            {/* Back */}
             <button
               onClick={() => router.push("/")}
-              className="px-5 py-2 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors text-sm"
+              className="self-start rounded-full border border-black/30 px-6 py-2 text-base text-black/70 transition-colors hover:border-black/60 hover:text-black"
             >
               ← บ่นใหม่
             </button>
-
+          </div>
+        ) : (
+          <div className="text-center fade-up py-20">
+            <p className="text-black/60 text-lg mb-4">ไม่พบผลลัพท์</p>
             <button
-              onClick={handleCopy}
-              className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
-                copied
-                  ? "bg-green-600 text-white scale-105"
-                  : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
-              }`}
+              onClick={() => router.push("/")}
+              className="rounded-full bg-[#ff8055] px-6 py-2 text-white font-bold hover:bg-[#ff6a3c] transition-colors"
             >
-              {copied ? "✓ คัดลอกแล้ว! ✨" : "คัดลอก 📋"}
+              ← กลับไปบ่น
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="relative text-center fade-up">
-          <p className="text-zinc-400 text-lg mb-4">ไม่พบผลลัพท์</p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-6 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm transition-colors"
-          >
-            ← กลับไปบ่น
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
