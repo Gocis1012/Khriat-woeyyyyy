@@ -16,11 +16,20 @@ declare global {
             el: HTMLElement,
             config: Record<string, unknown>
           ) => void;
-          prompt: () => void;
+          prompt: (
+            momentListener?: (notification: GooglePromptNotification) => void
+          ) => void;
         };
       };
     };
   }
+}
+
+interface GooglePromptNotification {
+  isNotDisplayed?: () => boolean;
+  getNotDisplayedReason?: () => string;
+  isSkippedMoment?: () => boolean;
+  getSkippedReason?: () => string;
 }
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -70,7 +79,22 @@ export default function Navbar() {
       console.warn("[Navbar] NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set");
       return;
     }
-    window.google?.accounts.id.prompt();
+    if (!window.google) {
+      console.warn("[Navbar] Google Identity script not loaded yet — try again in a moment");
+      return;
+    }
+    // Surface why One Tap didn't show (e.g. origin not allowlisted, cooldown).
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed?.()) {
+        console.error(
+          "[Navbar] Google sign-in not displayed:",
+          notification.getNotDisplayedReason?.(),
+          "— check that this exact origin (incl. port) is in the OAuth client's Authorized JavaScript origins."
+        );
+      } else if (notification.isSkippedMoment?.()) {
+        console.warn("[Navbar] Google sign-in skipped:", notification.getSkippedReason?.());
+      }
+    });
   };
 
   return (
