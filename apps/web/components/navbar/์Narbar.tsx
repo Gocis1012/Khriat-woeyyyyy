@@ -94,16 +94,13 @@ export default function Navbar() {
           >
             หน้าแรก
           </Link>
-          <Link
-            href="/second"
-            className={`text-xl font-bold transition-colors ${
-              pathname === "/second"
-                ? "text-[#64579f]"
-                : "text-black hover:text-[#64579f]"
-            }`}
+          {/* Placeholder — no About page yet, so this is inert */}
+          <span
+            className="text-xl font-bold text-black/30 cursor-default select-none"
+            aria-disabled="true"
           >
             เกี่ยวกับเรา
-          </Link>
+          </span>
         </div>
 
         {/* Right side */}
