@@ -44,3 +44,6 @@ dist/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Go coverage output
+apps/api/cover.out

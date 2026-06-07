@@ -64,11 +64,11 @@ func main() {
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
 
-	authService := service.NewAuthService(env.JWTSecret, env.GoogleClientID)
-	authHandler := handler.NewAuthHandler(authService, userService)
-
 	guestRepo := repository.NewGuestRepository(redisClient)
 	guestSvc  := service.NewGuestService(guestRepo)
+
+	authService := service.NewAuthService(env.JWTSecret, env.GoogleClientID)
+	authHandler := handler.NewAuthHandler(authService, userService, guestSvc)
 
 	translationSvc, err := service.NewTranslationService(env.DeepSeekAPIKey)
 	if err != nil {

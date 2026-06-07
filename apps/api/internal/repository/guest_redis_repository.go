@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -103,10 +105,13 @@ func (r *guestRedisRepository) DeductCredit(ctx context.Context, guestID string,
     ).Err()
 
     if err != nil {
-        if err.Error() == "INSUFFICIENT_CREDIT" {
+        // Redis/miniredis may prefix the Lua error_reply (e.g. "ERR ..."),
+        // so match on substring rather than exact string.
+        msg := err.Error()
+        if strings.Contains(msg, "INSUFFICIENT_CREDIT") {
             return ErrInsufficientCredit
         }
-        if err.Error() == "GUEST_NOT_FOUND" {
+        if strings.Contains(msg, "GUEST_NOT_FOUND") {
             return ErrGuestNotFound
         }
         return fmt.Errorf("DeductCredit: %w", err)

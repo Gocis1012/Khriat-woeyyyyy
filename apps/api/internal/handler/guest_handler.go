@@ -10,9 +10,9 @@ import (
 )
 
 type GuestHandler struct {
-	guestService     *service.GuestService
+	guestService     guestSvc
 	userService      service.UserService
-	translateService *service.TranslationService
+	translateService translatorSvc
 }
 
 type translateGuestRequest struct {
@@ -22,9 +22,9 @@ type translateGuestRequest struct {
 }
 
 func NewGuestHandler(
-	guestService *service.GuestService,
+	guestService guestSvc,
 	userService service.UserService,
-	translateService *service.TranslationService,
+	translateService translatorSvc,
 ) *GuestHandler {
 	return &GuestHandler{
 		guestService:     guestService,

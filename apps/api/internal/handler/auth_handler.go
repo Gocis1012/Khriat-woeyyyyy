@@ -11,14 +11,16 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
-	userService service.UserService
+	authService  authSvc
+	userService  service.UserService
+	guestService guestSvc
 }
 
-func NewAuthHandler(authSvc *service.AuthService, userSvc service.UserService) *AuthHandler {
+func NewAuthHandler(auth authSvc, userSvc service.UserService, guest guestSvc) *AuthHandler {
 	return &AuthHandler{
-		authService: authSvc,
-		userService: userSvc,
+		authService:  auth,
+		userService:  userSvc,
+		guestService: guest,
 	}
 }
 
@@ -51,18 +53,36 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 			})
 		}
 
-		// New user — create with 10 credits (DB default)
+		// New user — base 10 credits + any remaining guest credits
+		const baseCredit = 10.0
+		initialCredit := baseCredit
+
+		guestID, _ := c.Locals("guest_id").(string)
+		if guestID != "" {
+			if guest, err := h.guestService.GetStatus(c.Context(), guestID); err == nil {
+				initialCredit += guest.Credit
+			}
+		}
+
 		user = &model.User{
 			GoogleID:  profile.GoogleID,
 			Email:     profile.Email,
 			Username:  profile.Username,
 			AvatarURL: &profile.AvatarURL,
+			Credit:    initialCredit,
 		}
 		if err := h.userService.Insert(c.Context(), user); err != nil {
 			slog.Error("Failed to create user", "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "failed to create user",
 			})
+		}
+
+		// Clean up guest session (best-effort; 24h TTL covers failures)
+		if guestID != "" {
+			if err := h.guestService.DeleteSession(c.Context(), guestID); err != nil {
+				slog.Warn("Failed to delete guest session after registration", "guest_id", guestID, "error", err)
+			}
 		}
 	}
 

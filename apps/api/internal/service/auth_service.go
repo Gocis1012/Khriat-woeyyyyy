@@ -10,9 +10,13 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
+// googleValidateFunc matches idtoken.Validate so it can be swapped in tests.
+type googleValidateFunc func(ctx context.Context, idToken, audience string) (*idtoken.Payload, error)
+
 type AuthService struct {
 	jwtSecret      string
 	googleClientID string
+	validate       googleValidateFunc
 }
 
 type JWTClaims struct {
@@ -25,12 +29,13 @@ func NewAuthService(jwtSecret, googleClientID string) *AuthService {
 	return &AuthService{
 		jwtSecret:      jwtSecret,
 		googleClientID: googleClientID,
+		validate:       idtoken.Validate,
 	}
 }
 
 // ValidateGoogleToken verifies a Google ID token and extracts profile info.
 func (s *AuthService) ValidateGoogleToken(ctx context.Context, idToken string) (*model.GoogleProfile, error) {
-	payload, err := idtoken.Validate(ctx, idToken, s.googleClientID)
+	payload, err := s.validate(ctx, idToken, s.googleClientID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Google token: %w", err)
 	}

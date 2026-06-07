@@ -8,8 +8,17 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+// chatCompleter is the slice of the OpenAI/DeepSeek client we depend on.
+// The real *openai.Client satisfies it; tests inject a fake.
+type chatCompleter interface {
+	CreateChatCompletion(
+		context.Context,
+		openai.ChatCompletionRequest,
+	) (openai.ChatCompletionResponse, error)
+}
+
 type TranslationService struct {
-	aiClient *openai.Client
+	aiClient chatCompleter
 }
 
 func NewTranslationService(apiKey string) (*TranslationService, error) {
@@ -18,6 +27,11 @@ func NewTranslationService(apiKey string) (*TranslationService, error) {
 
 	client := openai.NewClientWithConfig(config)
 	return &TranslationService{aiClient: client}, nil
+}
+
+// newWithClient builds a service around an injected client (used in tests).
+func newWithClient(c chatCompleter) *TranslationService {
+	return &TranslationService{aiClient: c}
 }
 
 // ── Context descriptions ──────────────────────────────────────────────────────

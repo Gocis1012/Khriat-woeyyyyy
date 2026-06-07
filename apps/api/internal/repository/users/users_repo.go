@@ -7,10 +7,15 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrUserNotFound = errors.New("user not found")
+
+// pgxQuerier is the slice of pgxpool.Pool we use. Both *pgxpool.Pool and
+// pgxmock's PgxPoolIface satisfy it, so tests can inject a mock.
+type pgxQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
 
 type UserRepository interface {
 	Insert(ctx context.Context, user *model.User) error
@@ -20,17 +25,17 @@ type UserRepository interface {
 }
 
 type postgrestRepository struct {
-	db *pgxpool.Pool
+	db pgxQuerier
 }
 
-func NewPostgresRepository(db *pgxpool.Pool) UserRepository {
+func NewPostgresRepository(db pgxQuerier) UserRepository {
 	return &postgrestRepository{db: db}
 }
 
 func (r *postgrestRepository) Insert(ctx context.Context, user *model.User) error {
 	query := `
-	INSERT INTO users (google_id, email, username, avatar_url)
-	VALUES ($1, $2, $3, $4)
+	INSERT INTO users (google_id, email, username, avatar_url, credit)
+	VALUES ($1, $2, $3, $4, $5)
 	RETURNING id, credit, member_type, created_at, updated_at`
 
 	row := r.db.QueryRow(ctx, query,
@@ -38,6 +43,7 @@ func (r *postgrestRepository) Insert(ctx context.Context, user *model.User) erro
 		user.Email,
 		user.Username,
 		user.AvatarURL,
+		user.Credit,
 	)
 
 	err := row.Scan(
