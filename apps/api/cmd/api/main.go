@@ -79,7 +79,9 @@ func main() {
 	guestHandler := handler.NewGuestHandler(guestSvc, userService, translationSvc)
 
 	// ── Fiber ─────────────────────────────────────────────
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit: 64 * 1024, // 64 KB max request body
+	})
 
 	// Global middleware
 	app.Use(cors.New(cors.Config{
@@ -92,6 +94,10 @@ func main() {
 	app.Use(middleware.OptionalAuth(authService)) // Sets user_id if valid JWT present
 	app.Use("/translate", limiter.New(limiter.Config{
 		Max:        10,
+		Expiration: 1 * time.Minute,
+	}))
+	app.Use("/api/v1/auth", limiter.New(limiter.Config{
+		Max:        20,
 		Expiration: 1 * time.Minute,
 	}))
 

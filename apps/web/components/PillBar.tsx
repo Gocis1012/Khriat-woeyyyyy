@@ -55,10 +55,10 @@ export default function PillBar({
   }, [value, options]);
 
   return (
-    <div className="relative flex items-center w-full rounded-full border border-black/80 bg-white p-1.5 shadow-sm">
+    <div className="relative flex items-stretch w-full rounded-[24px] border border-black/80 bg-white p-1.5 shadow-sm">
       {/* Sliding orange highlight */}
       <div
-        className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-full bg-[#ff8055] transition-all duration-300 ease-out"
+        className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-[18px] bg-[#ff8055] transition-all duration-300 ease-out"
         style={{
           left: indicator.left,
           width: indicator.width,
@@ -73,7 +73,7 @@ export default function PillBar({
             btnRefs.current[i] = el;
           }}
           onClick={() => onChange(o.value as never)}
-          className={`relative z-10 min-w-0 flex-1 rounded-full px-1 py-2.5 text-center font-bold whitespace-nowrap transition-colors duration-300 ${textSize} ${
+          className={`relative z-10 min-w-0 flex-1 rounded-[18px] px-1 py-2.5 text-center font-bold leading-tight transition-colors duration-300 ${textSize} ${
             value === o.value ? "text-white" : "text-black hover:text-[#ff7b00]"
           }`}
         >

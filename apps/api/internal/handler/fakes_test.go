@@ -43,11 +43,11 @@ func (f *fakeGuestSvc) UseCredit(ctx context.Context, id string, fn func() error
 func (f *fakeGuestSvc) DeleteSession(ctx context.Context, id string) error { return f.del(ctx, id) }
 
 type fakeTranslator struct {
-	purify func(ctx context.Context, text, target string, level int) (string, error)
+	purify func(ctx context.Context, text, target string, level int, lang string) (string, error)
 }
 
-func (f *fakeTranslator) PurifyText(ctx context.Context, text, target string, level int) (string, error) {
-	return f.purify(ctx, text, target, level)
+func (f *fakeTranslator) PurifyText(ctx context.Context, text, target string, level int, lang string) (string, error) {
+	return f.purify(ctx, text, target, level, lang)
 }
 
 type fakeAuthSvc struct {

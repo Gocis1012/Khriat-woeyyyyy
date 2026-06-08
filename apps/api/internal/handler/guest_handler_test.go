@@ -13,7 +13,7 @@ import (
 )
 
 func okTranslator() *fakeTranslator {
-	return &fakeTranslator{purify: func(_ context.Context, _, _ string, _ int) (string, error) {
+	return &fakeTranslator{purify: func(_ context.Context, _, _ string, _ int, _ string) (string, error) {
 		return "สุภาพแล้ว", nil
 	}}
 }
@@ -143,7 +143,7 @@ func TestTranslate_User_InsufficientCredit(t *testing.T) {
 
 func TestTranslate_User_TranslationFails(t *testing.T) {
 	us := &fakeUserSvc{deduct: func(_ context.Context, _ string, _ float64) error { return nil }}
-	tr := &fakeTranslator{purify: func(_ context.Context, _, _ string, _ int) (string, error) {
+	tr := &fakeTranslator{purify: func(_ context.Context, _, _ string, _ int, _ string) (string, error) {
 		return "", errors.New("ai down")
 	}}
 	h := NewGuestHandler(&fakeGuestSvc{}, us, tr)

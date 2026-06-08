@@ -64,7 +64,7 @@ export default function Second() {
             {/* ของเจ้า (original) */}
             <div className="flex flex-col gap-1">
               <span className="text-[#ff7b00] text-xl font-bold pl-2">
-                ของเจ้า
+                ข้อความเดิม
               </span>
               <p className="text-black/80 text-lg pl-3 whitespace-pre-wrap break-words">
                 {original || "—"}
@@ -74,7 +74,7 @@ export default function Second() {
             {/* ของข่อย (result box) */}
             <div className="flex flex-col gap-2">
               <span className="text-[#ff7b00] text-xl font-bold pl-2">
-                ของข่อย
+                ผลลัพท์
               </span>
               <div className="relative w-full rounded-[18px] border border-black/80 bg-white p-6 pb-20 shadow-sm">
                 <p className="text-xl md:text-2xl leading-[1.7] text-black whitespace-pre-wrap break-words">

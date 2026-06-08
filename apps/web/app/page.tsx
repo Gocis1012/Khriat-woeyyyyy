@@ -1,7 +1,7 @@
 // apps/web/app/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import TextareaAutosize from "react-textarea-autosize";
 import PillBar from "../components/PillBar";
@@ -13,9 +13,10 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 export default function Home() {
-  const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [target, setTarget] = useState<"boss" | "client" | "friend">("boss");
   const [level, setLevel] = useState(3);
+  const [lang, setLang] = useState<"th" | "en">("th");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
@@ -25,7 +26,8 @@ export default function Home() {
   const activeLevel = LEVELS.find((l) => l.value === level)!;
 
   const handleTranslate = async () => {
-    if (!input.trim()) {
+    const text = textareaRef.current?.value ?? "";
+    if (!text.trim()) {
       setErrorMsg("พิมพ์เรื่องที่อยากบ่นก่อนน้า~");
       return;
     }
@@ -42,7 +44,7 @@ export default function Home() {
         method: "POST",
         credentials: "include",
         headers,
-        body: JSON.stringify({ text: input, level, target }),
+        body: JSON.stringify({ text, level, target, lang }),
       });
 
       if (res.status === 402) {
@@ -62,10 +64,11 @@ export default function Home() {
       const data = await res.json();
       await refreshCredit();
 
-      sessionStorage.setItem("translationInput", input);
+      sessionStorage.setItem("translationInput", text);
       sessionStorage.setItem("translationResult", JSON.stringify(data));
       sessionStorage.setItem("translationLevel", String(level));
       sessionStorage.setItem("translationTarget", target);
+      sessionStorage.setItem("translationLang", lang);
       router.push("/second");
     } catch {
       setErrorMsg("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่");
@@ -78,11 +81,9 @@ export default function Home() {
     <div className="flex-1 w-full bg-white flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-5xl flex flex-col gap-5">
         {/* ── ส่งให้ใคร ───────────────────────────────── */}
-        <div className="flex flex-col gap-2">
+        <div className="mx-auto w-full max-w-xl flex flex-col gap-2">
           <span className="text-[#ff7b00] text-xl font-bold pl-2">ส่งให้ใคร</span>
-          <div className="mx-auto w-full max-w-xl">
-            <PillBar options={TARGETS} value={target} onChange={setTarget} />
-          </div>
+          <PillBar options={TARGETS} value={target} onChange={setTarget} />
         </div>
 
         {/* ── เลือกระดับภาษา ──────────────────────────── */}
@@ -117,13 +118,13 @@ export default function Home() {
         {/* ── พิมพ์หม่องนี้เลยยยย (input) ──────────────── */}
         <div className="flex flex-col gap-2">
           <span className="text-[#ff7b00] text-xl font-bold pl-2">
-            พิมพ์หม่องนี้เลยยยย
+            พิมพ์ตรงนี้เลยยยย
           </span>
           <div className="relative w-full rounded-[18px] border border-black/80 bg-white p-5 pb-20 shadow-sm">
             <TextareaAutosize
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="พิมพ์เรื่องที่อยากบ่น... แล้วเราจะแปลงให้สุภาพ 😇"
+              ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
+              defaultValue=""
+              placeholder="พิมพ์เรื่องที่อยากบ่น... แล้วเราจะแปลงให้สุภาพ"
               minRows={5}
               maxRows={12}
               className="w-full resize-none border-none bg-transparent text-xl md:text-2xl leading-[1.6] text-black outline-none placeholder-black/30 font-dog"

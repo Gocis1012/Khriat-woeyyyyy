@@ -14,10 +14,10 @@ declare global {
           initialize: (config: Record<string, unknown>) => void;
           renderButton: (
             el: HTMLElement,
-            config: Record<string, unknown>
+            config: Record<string, unknown>,
           ) => void;
           prompt: (
-            momentListener?: (notification: GooglePromptNotification) => void
+            momentListener?: (notification: GooglePromptNotification) => void,
           ) => void;
         };
       };
@@ -33,13 +33,13 @@ interface GooglePromptNotification {
 }
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
-
 export default function Navbar() {
   const pathname = usePathname();
   const { credit } = useGuest();
   const { user, isLoggedIn, login, logout } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
   const initialized = useRef(false);
+  const hiddenGoogleBtn = useRef<HTMLDivElement>(null);
 
   const handleCredential = useCallback(
     async (response: { credential: string }) => {
@@ -49,18 +49,23 @@ export default function Navbar() {
         /* ignore */
       }
     },
-    [login]
+    [login],
   );
 
-  // Initialize Google Identity once (One Tap on click)
+  // Render a hidden Google button so clicking our custom button delegates to it.
+  // This avoids One Tap's cooldown/suppression logic while still getting an ID token.
   useEffect(() => {
     if (initialized.current || isLoggedIn || !GOOGLE_CLIENT_ID) return;
 
     const init = () => {
-      if (!window.google) return false;
+      if (!window.google || !hiddenGoogleBtn.current) return false;
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleCredential,
+      });
+      window.google.accounts.id.renderButton(hiddenGoogleBtn.current, {
+        type: "standard",
+        size: "large",
       });
       initialized.current = true;
       return true;
@@ -79,26 +84,21 @@ export default function Navbar() {
       console.warn("[Navbar] NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set");
       return;
     }
-    if (!window.google) {
-      console.warn("[Navbar] Google Identity script not loaded yet — try again in a moment");
-      return;
+    // Delegate to the hidden Google-rendered button which handles the full auth flow.
+    const btn = hiddenGoogleBtn.current?.querySelector<HTMLElement>(
+      "div[role='button']",
+    );
+    if (btn) {
+      btn.click();
+    } else {
+      console.warn("[Navbar] Google button not ready yet — try again in a moment");
     }
-    // Surface why One Tap didn't show (e.g. origin not allowlisted, cooldown).
-    window.google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed?.()) {
-        console.error(
-          "[Navbar] Google sign-in not displayed:",
-          notification.getNotDisplayedReason?.(),
-          "— check that this exact origin (incl. port) is in the OAuth client's Authorized JavaScript origins."
-        );
-      } else if (notification.isSkippedMoment?.()) {
-        console.warn("[Navbar] Google sign-in skipped:", notification.getSkippedReason?.());
-      }
-    });
   };
 
   return (
     <>
+      {/* Hidden Google-rendered button — provides the real sign-in click target */}
+      <div ref={hiddenGoogleBtn} style={{ display: "none" }} aria-hidden="true" />
       <nav className="relative w-full h-20 flex items-center border-b border-black/10 bg-white px-6 md:px-10">
         {/* Logo */}
         <Link
@@ -110,21 +110,23 @@ export default function Navbar() {
 
         {/* Center nav */}
         <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-10">
-          <Link
+          {/* <Link
             href="/"
             className={`text-xl font-bold transition-colors ${
-              pathname === "/" ? "text-[#64579f]" : "text-black hover:text-[#64579f]"
+              pathname === "/"
+                ? "text-[#64579f]"
+                : "text-black hover:text-[#64579f]"
             }`}
           >
             หน้าแรก
-          </Link>
+          </Link> */}
           {/* Placeholder — no About page yet, so this is inert */}
-          <span
+          {/* <span
             className="text-xl font-bold text-black/30 cursor-default select-none"
             aria-disabled="true"
           >
             เกี่ยวกับเรา
-          </span>
+          </span> */}
         </div>
 
         {/* Right side */}

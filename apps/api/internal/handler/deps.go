@@ -17,7 +17,7 @@ type guestSvc interface {
 }
 
 type translatorSvc interface {
-	PurifyText(ctx context.Context, text, target string, level int) (string, error)
+	PurifyText(ctx context.Context, text, target string, level int, lang string) (string, error)
 }
 
 type authSvc interface {

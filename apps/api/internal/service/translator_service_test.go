@@ -42,7 +42,7 @@ func TestPurifyText_Success(t *testing.T) {
 	fake := &fakeCompleter{resp: respWith("สุภาพแล้วครับ")}
 	svc := newWithClient(fake)
 
-	out, err := svc.PurifyText(context.Background(), "ด่าๆ", "boss", 3)
+	out, err := svc.PurifyText(context.Background(), "ด่าๆ", "boss", 3, "th")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,14 +58,14 @@ func TestPurifyText_Success(t *testing.T) {
 
 func TestPurifyText_EmptyChoices(t *testing.T) {
 	svc := newWithClient(&fakeCompleter{resp: openai.ChatCompletionResponse{}})
-	if _, err := svc.PurifyText(context.Background(), "x", "boss", 3); err == nil {
+	if _, err := svc.PurifyText(context.Background(), "x", "boss", 3, "th"); err == nil {
 		t.Error("expected error for empty choices")
 	}
 }
 
 func TestPurifyText_ClientError(t *testing.T) {
 	svc := newWithClient(&fakeCompleter{err: errors.New("api down")})
-	if _, err := svc.PurifyText(context.Background(), "x", "boss", 3); err == nil {
+	if _, err := svc.PurifyText(context.Background(), "x", "boss", 3, "th"); err == nil {
 		t.Error("expected error from client")
 	}
 }
@@ -76,7 +76,7 @@ func TestPurifyText_DefaultsLevelAndTarget(t *testing.T) {
 
 	// level 0 and 99 should fall back to 3; empty target -> boss
 	for _, lvl := range []int{0, 99} {
-		if _, err := svc.PurifyText(context.Background(), "x", "", lvl); err != nil {
+		if _, err := svc.PurifyText(context.Background(), "x", "", lvl, "th"); err != nil {
 			t.Errorf("level %d: unexpected error %v", lvl, err)
 		}
 	}
@@ -92,8 +92,10 @@ func TestPurifyText_AllTargetsAndLevels(t *testing.T) {
 	svc := newWithClient(fake)
 	for _, target := range []string{"boss", "client", "teacher", "friend", "unknown"} {
 		for lvl := 1; lvl <= 5; lvl++ {
-			if _, err := svc.PurifyText(context.Background(), "x", target, lvl); err != nil {
-				t.Errorf("target=%s level=%d: %v", target, lvl, err)
+			for _, lang := range []string{"th", "en", ""} {
+				if _, err := svc.PurifyText(context.Background(), "x", target, lvl, lang); err != nil {
+					t.Errorf("target=%s level=%d lang=%s: %v", target, lvl, lang, err)
+				}
 			}
 		}
 	}
