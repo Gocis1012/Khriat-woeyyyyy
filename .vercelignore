@@ -1,0 +1,9 @@
+.gopath
+node_modules
+.next
+load-test
+apps/api
+pgadmin
+scripts
+DEPLOY_REMINDER.md
+level-lang.md
