@@ -2,8 +2,9 @@ services:
   - type: web
     name: khriat-woeyyyyy-api
     runtime: docker
-    dockerfilePath: apps/api/Dockerfile
-    dockerContext: apps/api
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: PORT
