@@ -14,6 +14,12 @@ const (
 
 func GuestSession(appEnv string) fiber.Handler {
 	secureCookie := appEnv == "production"
+	// Cross-origin requests (Vercel → Render) require SameSite=None; Secure.
+	// SameSite=Lax blocks cookies on cross-origin POST, causing 401s.
+	sameSite := "Lax"
+	if secureCookie {
+		sameSite = "None"
+	}
 
 	return func(c *fiber.Ctx) error {
 		guestID := c.Cookies(GuestCookieName)
@@ -27,7 +33,7 @@ func GuestSession(appEnv string) fiber.Handler {
 				Expires:  time.Now().Add(GuestCookieTTL),
 				HTTPOnly: true,
 				Secure:   secureCookie,
-				SameSite: "Lax",
+				SameSite: sameSite,
 			})
 		}
 
