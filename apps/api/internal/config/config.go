@@ -8,15 +8,18 @@ import (
 )
 
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	RedisURL       string
-	FrontendOrigin string
-	JWTSecret      string
-	GoogleClientID string
-	DeepSeekAPIKey string
-	AutoMigrate    bool
-	AppEnv         string
+	Port                   string
+	DatabaseURL            string
+	RedisURL               string
+	FrontendOrigin         string
+	JWTSecret              string
+	GoogleClientID         string
+	DeepSeekAPIKey         string
+	AutoMigrate            bool
+	AppEnv                 string
+	OmiseSecretKey         string
+	OmiseWebhookAllowedIPs string
+	OmiseWebhookSecret     string
 }
 
 func Load() (Config, error) {
@@ -25,15 +28,18 @@ func Load() (Config, error) {
 	_ = loadDotEnv("../../.env")
 
 	cfg := Config{
-		Port:           getEnv("PORT", "8080"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		RedisURL:       getEnv("REDIS_URL", "localhost:6379"),
-		FrontendOrigin: getEnv("FRONTEND_ORIGIN", "http://localhost:3000"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		GoogleClientID: os.Getenv("GOOGLE_CLIENT_ID"),
-		DeepSeekAPIKey: os.Getenv("DEEPSEEK_API_KEY"),
-		AutoMigrate:    getEnv("AUTO_MIGRATE", "true") == "true",
-		AppEnv:         getEnv("APP_ENV", "development"),
+		Port:                   getEnv("PORT", "8080"),
+		DatabaseURL:            os.Getenv("DATABASE_URL"),
+		RedisURL:               getEnv("REDIS_URL", "localhost:6379"),
+		FrontendOrigin:         getEnv("FRONTEND_ORIGIN", "http://localhost:3000"),
+		JWTSecret:              os.Getenv("JWT_SECRET"),
+		GoogleClientID:         os.Getenv("GOOGLE_CLIENT_ID"),
+		DeepSeekAPIKey:         os.Getenv("DEEPSEEK_API_KEY"),
+		AutoMigrate:            getEnv("AUTO_MIGRATE", "true") == "true",
+		AppEnv:                 getEnv("APP_ENV", "development"),
+		OmiseSecretKey:         os.Getenv("OMISE_SECRET_KEY"),
+		OmiseWebhookAllowedIPs: os.Getenv("OMISE_WEBHOOK_ALLOWED_IPS"),
+		OmiseWebhookSecret:     os.Getenv("OMISE_WEBHOOK_SECRET"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -44,6 +50,15 @@ func Load() (Config, error) {
 	}
 	if cfg.DeepSeekAPIKey == "" {
 		return cfg, errors.New("DEEPSEEK_API_KEY is required")
+	}
+	if cfg.OmiseSecretKey == "" {
+		return cfg, errors.New("OMISE_SECRET_KEY is required")
+	}
+	if cfg.OmiseWebhookAllowedIPs == "" {
+		return cfg, errors.New("OMISE_WEBHOOK_ALLOWED_IPS is required")
+	}
+	if cfg.OmiseWebhookSecret == "" {
+		return cfg, errors.New("OMISE_WEBHOOK_SECRET is required")
 	}
 
 	return cfg, nil

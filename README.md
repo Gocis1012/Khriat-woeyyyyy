@@ -38,6 +38,13 @@ Output is in Thai by default. The backend also supports English output (`lang: "
 
 Credits are deducted only on a successful AI response. Rate limiting is enforced at 10 translate requests per minute per IP.
 
+**Topping up** — logged-in users can buy more credits via PromptPay QR (Omise). 1 THB paid = 1 credit granted, credited automatically once the payment settles. Guests must log in first (credits are tied to an account, not a browser session).
+
+1. Click **เติมเครดิต** (Top up) in the navbar, or on the home page once credits hit 0
+2. Enter an amount (20–5,000 THB) and generate a QR code
+3. Scan and pay with any Thai banking app that supports PromptPay
+4. The frontend polls payment status every 3 seconds; credit updates automatically on success
+
 ---
 
 ## Tech stack
@@ -48,6 +55,7 @@ Credits are deducted only on a successful AI response. Rate limiting is enforced
 | Backend | Go 1.25, Fiber v2 |
 | AI | DeepSeek API (OpenAI-compatible) |
 | Auth | Google Identity Services → backend-issued JWT |
+| Payments | Omise (PromptPay QR), HMAC-SHA256 + IP-allowlisted webhook |
 | Database | PostgreSQL (pgx/pgxpool, raw SQL, golang-migrate) |
 | Sessions | Redis (guest credit tracking) |
 | Deploy — backend | Render (Docker) |
@@ -79,6 +87,11 @@ GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
 DEEPSEEK_API_KEY=sk-your-deepseek-key
 AUTO_MIGRATE=true
 APP_ENV=development
+OMISE_SECRET_KEY=skey_test_your-omise-secret-key
+# Omise's published webhook source IPs — https://docs.omise.co/api-ips
+OMISE_WEBHOOK_ALLOWED_IPS=54.169.118.227,52.74.199.175,18.139.13.19
+# Omise dashboard → Webhooks → "Roll secret" (base64-encoded value)
+OMISE_WEBHOOK_SECRET=your-base64-webhook-secret
 ```
 
 Create `apps/web/.env.local`:
@@ -151,6 +164,9 @@ npm test
 | `GOOGLE_CLIENT_ID` | Google Cloud Console → your OAuth client |
 | `DEEPSEEK_API_KEY` | DeepSeek platform dashboard |
 | `FRONTEND_ORIGIN` | Your Vercel URL (set after frontend is deployed) |
+| `OMISE_SECRET_KEY` | Omise dashboard → Keys (`skey_live_...` / `skey_test_...`) |
+| `OMISE_WEBHOOK_ALLOWED_IPS` | `54.169.118.227,52.74.199.175,18.139.13.19` — Omise's published webhook IPs ([docs.omise.co/api-ips](https://docs.omise.co/api-ips)); re-check that page before going live, IPs can change |
+| `OMISE_WEBHOOK_SECRET` | Omise dashboard → Webhooks → "Roll secret" (base64-encoded value) |
 
 ### Frontend → Vercel
 
@@ -210,6 +226,37 @@ Error codes:
 ### `POST /api/v1/auth/google`
 Exchange a Google ID token for a backend JWT. Rate limited: 20 requests per minute per IP.
 
+### `POST /api/v1/payments/create`
+Requires auth (`Authorization: Bearer <jwt>`). Creates an Omise PromptPay charge and a pending payment record.
+
+Request body:
+```json
+{ "amount": 50 }
+```
+- `amount`: THB, must be between 20 and 5,000
+
+Response (`201`):
+```json
+{
+  "paymentId": "3f2b...",
+  "status": "pending",
+  "amount": 50,
+  "currency": "THB",
+  "qrCodeUri": "https://..."
+}
+```
+
+### `GET /api/v1/payments/:id/status`
+Requires auth. Returns the payment status, scoped to the requesting user (`404` if it belongs to someone else).
+
+```json
+{ "paymentId": "3f2b...", "status": "pending", "amount": 50 }
+```
+`status` is one of `pending` | `success` | `failed`.
+
+### `POST /webhooks/omise`
+Called by Omise, not the frontend. Verifies the `Omise-Signature-Timestamp` / `Omise-Signature` headers (HMAC-SHA256, base64-decoded webhook secret — see [docs.omise.co/api-webhooks](https://docs.omise.co/api-webhooks#protecting-your-endpoints)) and restricts the source IP to Omise's published webhook servers. On a successful charge, credits the user's balance and records a `credit_ledger` entry in a single transaction. Idempotent — replays of the same event are skipped once processed.
+
 ---
 
 ## Project structure
@@ -223,15 +270,17 @@ Exchange a Google ID token for a backend JWT. Rate limited: 20 requests per minu
 │   │   │   ├── config/        # Env loading
 │   │   │   ├── database/      # Postgres + Redis + migrations
 │   │   │   ├── handler/       # HTTP handlers
-│   │   │   ├── middleware/    # Guest session, JWT auth
+│   │   │   ├── middleware/    # Guest session, JWT auth, Omise IP allowlist
+│   │   │   ├── model/         # Domain structs
 │   │   │   ├── repository/    # Data access layer
 │   │   │   ├── routes/        # Route registration
-│   │   │   └── service/       # Business logic + AI calls
+│   │   │   └── service/       # Business logic, AI calls, Omise client
 │   │   └── Dockerfile
 │   └── web/                   # Next.js frontend
-│       ├── app/               # App Router pages + contexts
+│       ├── app/               # App Router pages + contexts (incl. payment/)
 │       ├── components/        # Navbar, PillBar, etc.
 │       └── fonts/
+├── postman/                   # Postman collection for manual API testing
 ├── docker-compose.yml         # Local Postgres + Redis
 ├── render.yaml                # Render deployment config
 └── vercel.json                # Vercel deployment config

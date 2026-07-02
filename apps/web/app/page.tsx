@@ -3,6 +3,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import TextareaAutosize from "react-textarea-autosize";
 import PillBar from "../components/PillBar";
 import { TARGETS, LEVELS } from "./lib/translateOptions";
@@ -151,6 +152,23 @@ export default function Home() {
         {errorMsg && (
           <p className="text-center text-[#ff7b00] font-bold">{errorMsg}</p>
         )}
+
+        {/* Out of credit — give the user a next step */}
+        {credit === 0 &&
+          (token ? (
+            <div className="text-center">
+              <Link
+                href="/payment"
+                className="inline-block rounded-full bg-[#ff8055] px-6 py-2 text-white font-bold hover:bg-[#ff6a3c] transition-colors"
+              >
+                เติมเครดิต
+              </Link>
+            </div>
+          ) : (
+            <p className="text-center text-[#ff7b00] font-bold">
+              เครดิตหมดแล้ว กรุณาเข้าสู่ระบบเพื่อรับเครดิตเพิ่ม
+            </p>
+          ))}
       </div>
     </div>
   );

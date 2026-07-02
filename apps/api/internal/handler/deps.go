@@ -24,3 +24,10 @@ type authSvc interface {
 	ValidateGoogleToken(ctx context.Context, idToken string) (*model.GoogleProfile, error)
 	GenerateJWT(userID, email string) (string, error)
 }
+
+type paymentSvc interface {
+	CreateCharge(ctx context.Context, userID string, amountTHB float64) (*model.Payment, string, error)
+	GetStatus(ctx context.Context, paymentID, userID string) (*model.Payment, error)
+	VerifyWebhookSignature(rawBody []byte, timestampHeader, signatureHeader string) bool
+	ProcessWebhook(ctx context.Context, rawBody []byte) error
+}

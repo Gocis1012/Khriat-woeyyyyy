@@ -13,6 +13,7 @@ func Setup(
 	userHandler *handler.UserHandler,
 	authHandler *handler.AuthHandler,
 	authService *service.AuthService,
+	paymentHandler *handler.PaymentHandler,
 ) {
 	api := app.Group("/api/v1")
 
@@ -24,4 +25,10 @@ func Setup(
 	user := api.Group("/user")
 	user.Use(middleware.RequireAuth(authService))
 	user.Get("/me", authHandler.GetMe)
+
+	// Payment routes (protected) — guests must log in before charging.
+	payments := api.Group("/payments")
+	payments.Use(middleware.RequireAuth(authService))
+	payments.Post("/create", paymentHandler.CreateCharge)
+	payments.Get("/:id/status", paymentHandler.GetStatus)
 }

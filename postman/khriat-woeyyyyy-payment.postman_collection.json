@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "khriat-woeyyyyy — Payment (Omise)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test the /payments/* endpoints and the /webhooks/omise handler.\n\nSetup:\n1. Set `base_url` (http://localhost:8080 or your Render URL).\n2. Log into the app in a browser, copy the JWT from localStorage, set `jwt`.\n3. For the webhook-simulation request, set `webhook_secret` (base64 value from Omise dashboard → Webhooks → Roll secret) and `provider_tx_id` (the Omise charge id — query it from the payments table after creating a charge).\n4. Webhook simulation will get a 403 from real Omise's servers-only IP allowlist unless you temporarily add 127.0.0.1 to OMISE_WEBHOOK_ALLOWED_IPS in your LOCAL .env (never on production)."
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "jwt", "value": "" },
+    { "key": "payment_id", "value": "" },
+    { "key": "provider_tx_id", "value": "" },
+    { "key": "webhook_secret", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Create Charge",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": "{{base_url}}/api/v1/payments/create",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 50\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 201', () => pm.response.to.have.status(201));",
+              "const data = pm.response.json();",
+              "if (data.paymentId) {",
+              "  pm.collectionVariables.set('payment_id', data.paymentId);",
+              "  console.log('Saved payment_id:', data.paymentId);",
+              "}",
+              "pm.test('has qrCodeUri', () => pm.expect(data.qrCodeUri).to.be.a('string'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get Payment Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": "{{base_url}}/api/v1/payments/{{payment_id}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "console.log('Payment status:', pm.response.json().status);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Simulate Webhook (local only)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Omise-Signature-Timestamp", "value": "{{omise_ts}}" },
+          { "key": "Omise-Signature", "value": "{{omise_sig}}" }
+        ],
+        "url": "{{base_url}}/webhooks/omise",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"key\":\"charge.complete\",\"data\":{\"object\":\"charge\",\"id\":\"{{provider_tx_id}}\",\"status\":\"successful\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Computes Omise-Signature-Timestamp / Omise-Signature exactly as",
+              "// docs.omise.co/api-webhooks#protecting-your-endpoints specifies:",
+              "// HMAC-SHA256(base64_decode(secret), \"<timestamp>.<raw_body>\"), hex-encoded.",
+              "",
+              "const secretB64 = pm.collectionVariables.get('webhook_secret');",
+              "if (!secretB64) {",
+              "  console.warn('Set the webhook_secret collection variable first (Omise dashboard → Webhooks → Roll secret).');",
+              "}",
+              "",
+              "const rawBody = pm.request.body.raw;",
+              "const timestamp = Math.floor(Date.now() / 1000).toString();",
+              "",
+              "const key = CryptoJS.enc.Base64.parse(secretB64);",
+              "const signedPayload = timestamp + '.' + rawBody;",
+              "const signature = CryptoJS.HmacSHA256(signedPayload, key).toString(CryptoJS.enc.Hex);",
+              "",
+              "pm.collectionVariables.set('omise_ts', timestamp);",
+              "pm.collectionVariables.set('omise_sig', signature);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200 (signature + IP accepted)', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 403) console.warn('403 = your IP is not in OMISE_WEBHOOK_ALLOWED_IPS. Add 127.0.0.1 locally.');",
+              "if (pm.response.code === 400) console.warn('400 = signature mismatch. Check webhook_secret is correct and base64-encoded.');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -143,6 +143,16 @@ export default function Navbar() {
               </span>
             ))}
 
+          {/* Top up — only logged-in users can pay; guests are redirected to log in */}
+          {isLoggedIn && (
+            <Link
+              href="/payment"
+              className="text-sm px-3 py-1.5 rounded-full border border-[#ff8055] text-[#ff7b00] font-bold hover:bg-orange-50 transition-colors"
+            >
+              เติมเครดิต
+            </Link>
+          )}
+
           {/* Orange circle: avatar (logged in) or login (guest) */}
           {isLoggedIn && user ? (
             <button

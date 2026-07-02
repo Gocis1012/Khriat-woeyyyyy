@@ -60,12 +60,12 @@ func main() {
 	slog.Info("Successfully connected to Redis")
 
 	// ── Services ──────────────────────────────────────────
-	userRepo    := users.NewPostgresRepository(db)
+	userRepo := users.NewPostgresRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
 
 	guestRepo := repository.NewGuestRepository(redisClient)
-	guestSvc  := service.NewGuestService(guestRepo)
+	guestSvc := service.NewGuestService(guestRepo)
 
 	authService := service.NewAuthService(env.JWTSecret, env.GoogleClientID)
 	authHandler := handler.NewAuthHandler(authService, userService, guestSvc)
@@ -77,6 +77,11 @@ func main() {
 	}
 
 	guestHandler := handler.NewGuestHandler(guestSvc, userService, translationSvc)
+
+	paymentRepo := repository.NewPaymentRepository(db)
+	omiseSvc := service.NewOmiseService(env.OmiseSecretKey)
+	paymentSvc := service.NewPaymentService(paymentRepo, omiseSvc, env.OmiseWebhookSecret)
+	paymentHandler := handler.NewPaymentHandler(paymentSvc)
 
 	// ── Fiber ─────────────────────────────────────────────
 	app := fiber.New(fiber.Config{
@@ -107,9 +112,13 @@ func main() {
 	})
 	app.Get("/guest/status", guestHandler.GetStatus)
 	app.Post("/translate", guestHandler.Translate)
+	app.Post("/webhooks/omise",
+		middleware.OmiseIPAllowlist(env.OmiseWebhookAllowedIPs),
+		paymentHandler.HandleWebhook,
+	)
 
-	// Auth + User routes
-	routes.Setup(app, userHandler, authHandler, authService)
+	// Auth + User + Payment routes
+	routes.Setup(app, userHandler, authHandler, authService, paymentHandler)
 
 	// ── Start ─────────────────────────────────────────────
 	slog.Info("Server listening", "port", env.Port)

@@ -6,11 +6,14 @@ import (
 	"testing"
 )
 
-// setRequired sets the three required env vars for a successful Load().
+// setRequired sets the required env vars for a successful Load().
 func setRequired(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://localhost:5432/db")
 	t.Setenv("JWT_SECRET", "test-secret")
 	t.Setenv("DEEPSEEK_API_KEY", "sk-test")
+	t.Setenv("OMISE_SECRET_KEY", "skey_test")
+	t.Setenv("OMISE_WEBHOOK_ALLOWED_IPS", "203.0.113.4")
+	t.Setenv("OMISE_WEBHOOK_SECRET", "d2hzZWNfdGVzdA==")
 }
 
 func TestLoad_Success_Defaults(t *testing.T) {
@@ -67,22 +70,31 @@ func TestLoad_Overrides(t *testing.T) {
 
 func TestLoad_MissingRequired(t *testing.T) {
 	cases := []struct {
-		name      string
-		database  string
-		jwt       string
-		deepseek  string
-		wantError bool
+		name         string
+		database     string
+		jwt          string
+		deepseek     string
+		omiseSecret  string
+		omiseIPs     string
+		omiseWebhook string
+		wantError    bool
 	}{
-		{"all present", "db", "jwt", "ds", false},
-		{"missing database", "", "jwt", "ds", true},
-		{"missing jwt", "db", "", "ds", true},
-		{"missing deepseek", "db", "jwt", "", true},
+		{"all present", "db", "jwt", "ds", "skey", "203.0.113.4", "whsec", false},
+		{"missing database", "", "jwt", "ds", "skey", "203.0.113.4", "whsec", true},
+		{"missing jwt", "db", "", "ds", "skey", "203.0.113.4", "whsec", true},
+		{"missing deepseek", "db", "jwt", "", "skey", "203.0.113.4", "whsec", true},
+		{"missing omise secret", "db", "jwt", "ds", "", "203.0.113.4", "whsec", true},
+		{"missing omise allowed ips", "db", "jwt", "ds", "skey", "", "whsec", true},
+		{"missing omise webhook secret", "db", "jwt", "ds", "skey", "203.0.113.4", "", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("DATABASE_URL", tc.database)
 			t.Setenv("JWT_SECRET", tc.jwt)
 			t.Setenv("DEEPSEEK_API_KEY", tc.deepseek)
+			t.Setenv("OMISE_SECRET_KEY", tc.omiseSecret)
+			t.Setenv("OMISE_WEBHOOK_ALLOWED_IPS", tc.omiseIPs)
+			t.Setenv("OMISE_WEBHOOK_SECRET", tc.omiseWebhook)
 
 			_, err := Load()
 			if tc.wantError && err == nil {
